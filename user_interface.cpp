@@ -141,9 +141,7 @@ struct ChangeLog {
     std::string date;
 };
 std::vector<ChangeLog> latest_changes = {
-    {"Loader update", "Fixed rendering issues", "08/03/2025"},
-    {"Loader update", "Introduced ImGui rendering", "07/03/2025"},
-    {"Loader created", "Initial release", "06/03/2025"}
+    {xorstr_("Loader update"), xorstr_("Added authentication system"), xorstr_("09/03/2025")}
 };
 
 void user_interface::render_ui() {
@@ -280,14 +278,9 @@ void user_interface::render_ui() {
                 ImGui::PopFont();
                 ImGui::PopStyleColor();
 
-
                 ImGui::SetCursorPosX(20);
-                // Redeem Button
                 if (ImGui::Button(xorstr_("Redeem")))
                 {
-                    // Process the redeem key here
-                    // For example, you could validate the key or perform other actions
-                    // Example: std::string key = redeemKey;
                     std::string claim_key(input_redeem_key);
                     std::string response = network::try_redeem_key(authToken, claim_key);
                     if (response == xorstr_("Key claimed successfully!")) {
@@ -298,11 +291,8 @@ void user_interface::render_ui() {
                     showRedeemWindow = false;
                 }
                 ImGui::SameLine();
-                // Close button
                 if (ImGui::Button(xorstr_("Cancel")))
-                {
-                    showRedeemWindow = false; // Close the redeem window without redeeming
-                }
+                    showRedeemWindow = false;
             }
             ImGui::End();
         }
@@ -355,8 +345,10 @@ void user_interface::render_ui() {
 
                 ImGui::SetCursorPos(ImVec2(21, 470));
 
-                if (ImGui::ButtonNew(ICON_FA_SIGN_OUT, ImVec2(30, 30)))
+                if (ImGui::ButtonNew(ICON_FA_SIGN_OUT, ImVec2(30, 30))) {
                     user_interface::selected_tab = 1;
+                    showRedeemWindow = false;
+                }
 
                 ImGui::PopFont();
 
@@ -406,22 +398,22 @@ void user_interface::render_ui() {
                             ImGui::SetCursorPos(ImVec2(10, 10));
                             ImGui::Text(xorstr_("%s"), product.name.c_str());
                             ImGui::SetCursorPos(ImVec2(10, 30));
-                            if (product.status == "Undetected") {
+                            if (product.status == xorstr_("Undetected")) {
                                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(50, 255, 50, 255));
                             }
-                            else if (product.status == "Detected") {
+                            else if (product.status == xorstr_("Detected")) {
                                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
                             }
-                            else if (product.status == "Testing") {
+                            else if (product.status == xorstr_("Testing")) {
                                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 69, 0, 255));
                             }
                             else {
                                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(169, 169, 169, 255));
                             }
-                            ImGui::Text("%s", product.status.c_str());
+                            ImGui::Text(xorstr_("%s"), product.status.c_str());
                             ImGui::PopStyleColor();
                             ImGui::SetCursorPos(ImVec2(10, 50));
-                            ImGui::Text("Expiry: %s", product.expiry.c_str());
+                            ImGui::Text(xorstr_("Expiration date: %s"), product.expiry.c_str());
                             ImGui::PopFont();
 
                             ImGui::SetCursorPos(ImVec2(430, 45));
