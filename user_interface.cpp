@@ -191,7 +191,7 @@ void user_interface::render_ui() {
                 base_y_add += 20;
 
                 ImGui::SetCursorPos(ImVec2(100, base_y_offset + base_y_add));
-                ImGui::InputTextNew("##RenderUsername", input_username, sizeof(input_username), ImVec2(350, 25));
+                ImGui::InputTextNew(xorstr_("##iusername"), input_username, sizeof(input_username), ImVec2(350, 25));
                 base_y_add += 40;
 
                 ImGui::SetCursorPos(ImVec2(100, base_y_offset + base_y_add));
@@ -209,7 +209,7 @@ void user_interface::render_ui() {
                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(240, 240, 240, 255));
                 ImGui::PushFont(font_gram3_ttf);
                 ImGui::SetCursorPos(ImVec2(100, base_y_offset + base_y_add));
-                ImGui::InputTextNew("##RenderPassword", input_password, sizeof(input_password), ImVec2(350, 25), ImGuiInputTextFlags_Password);
+                ImGui::InputTextNew(xorstr_("##ipassword"), input_password, sizeof(input_password), ImVec2(350, 25), ImGuiInputTextFlags_Password);
                 ImGui::PopStyleColor();
                 base_y_add += 50;
 
@@ -398,10 +398,10 @@ void user_interface::render_ui() {
                             ImGui::SetCursorPos(ImVec2(10, 10));
                             ImGui::Text(xorstr_("%s"), product.name.c_str());
                             ImGui::SetCursorPos(ImVec2(10, 30));
-                            if (product.status == xorstr_("Undetected")) {
+                            if (product.status == xorstr_("Undetected") || product.status == xorstr_("Online")) {
                                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(50, 255, 50, 255));
                             }
-                            else if (product.status == xorstr_("Detected")) {
+                            else if (product.status == xorstr_("Detected") || product.status == xorstr_("Offline")) {
                                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
                             }
                             else if (product.status == xorstr_("Testing")) {
@@ -417,8 +417,13 @@ void user_interface::render_ui() {
                             ImGui::PopFont();
 
                             ImGui::SetCursorPos(ImVec2(430, 45));
-                            if (ImGui::Button(("Load##" + product.name).c_str(), ImVec2(50, 25))) {
+                            if (ImGui::Button((xorstr_("Load##") + product.name).c_str(), ImVec2(50, 25))) {
+                                if (product.status == xorstr_("Undetected") || product.status == xorstr_("Online")) {
 
+                                }
+                                else {
+                                    notifications.push_back({ (xorstr_("Software is ") + product.status).c_str(), 3.0f });
+                                }
                             }
                             ImGui::PopStyleColor();
                         }

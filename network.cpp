@@ -45,20 +45,21 @@
 #include "nlohmann/json.hpp"
 #include "network.h"
 #include "dataset.h"
+#include "xorstr.h"
 #include <cpr/cpr.h>
 
 
 std::string network::get_auth_token(const std::string& username, const std::string& password) {
-    cpr::Response r = cpr::Post(cpr::Url{ "http://127.0.0.1:5000/login" },
-        cpr::Header{ {"Content-Type", "application/json"} },
-        cpr::Body{ R"({"username":")" + username + R"(","password":")" + password + R"("})" });
+    cpr::Response r = cpr::Post(cpr::Url{ xorstr_("http://127.0.0.1:5000/login") },
+        cpr::Header{ {xorstr_("Content-Type"), xorstr_("application/json")} },
+        cpr::Body{ xorstr_(R"({"username":")") + username + xorstr_(R"(","password":")") + password + xorstr_(R"("})") });
 
     if (r.status_code == 200) {
         auto jsonData = nlohmann::json::parse(r.text);
-        return jsonData["access_token"];
+        return jsonData[xorstr_("access_token")];
     }
     else {
-        std::cerr << "Failed to authenticate: " << r.text << std::endl;
+        //std::cerr << xorstr_("Failed to authenticate: ") << r.text << std::endl;
         return "";
     }
 }
@@ -66,8 +67,8 @@ std::vector<Product> network::fetch_products(const std::string& authToken) {
     std::vector<Product> products;
     try {
         cpr::Response response = cpr::Get(
-            cpr::Url{ "http://127.0.0.1:5000/products" },
-            cpr::Header{ {"Authorization", "Bearer " + authToken} },
+            cpr::Url{ xorstr_("http://127.0.0.1:5000/products") },
+            cpr::Header{ {xorstr_("Authorization"), xorstr_("Bearer ") + authToken} },
             cpr::VerifySsl(false)
         );
 
@@ -80,7 +81,7 @@ std::vector<Product> network::fetch_products(const std::string& authToken) {
         // Parse JSON response
         nlohmann::json jsonData = nlohmann::json::parse(response.text);
         for (const auto& item : jsonData) {
-            products.push_back({ item["name"], item["status"], item["expiration_date"] });
+            products.push_back({ item[xorstr_("name")], item[xorstr_("status")], item[xorstr_("expiration_date")] });
         }
     }
     catch (const std::exception& e) {
@@ -92,17 +93,17 @@ std::vector<Product> network::fetch_products(const std::string& authToken) {
 }
 
 std::string network::try_redeem_key(const std::string& authToken, const std::string& key) {
-    cpr::Response r = cpr::Post(cpr::Url{ "http://127.0.0.1:5000/claim_key" },
-        cpr::Header{ { "Authorization", "Bearer " + authToken }, { "Content-Type", "application/json" } },
-        cpr::Body{ R"({"key":")" + key + R"("})" },
+    cpr::Response r = cpr::Post(cpr::Url{ xorstr_("http://127.0.0.1:5000/claim_key") },
+        cpr::Header{ { xorstr_("Authorization"), xorstr_("Bearer ") + authToken }, { xorstr_("Content-Type"), xorstr_("application/json") } },
+        cpr::Body{ xorstr_(R"({"key":")") + key + xorstr_(R"("})") },
         cpr::VerifySsl(false));
 
     if (r.status_code == 200 || r.status_code == 400) {
         auto jsonData = nlohmann::json::parse(r.text);
-        return jsonData["msg"];
+        return jsonData[xorstr_("msg")];
     }
     else {
-        std::cerr << "Failed to authenticate: " << r.text << std::endl;
+        //std::cerr << "Failed to authenticate: " << r.text << std::endl;
         return "";
     }
 }
