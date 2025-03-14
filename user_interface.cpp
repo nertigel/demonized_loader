@@ -1,6 +1,7 @@
 #include "user_interface.h"
 #include "network.h"
 #include "includes.h"
+#include <thread>
 
 std::string authToken = xorstr_("");
 void user_interface::theme()
@@ -17,9 +18,9 @@ void user_interface::theme()
 
 	Color[ImGuiCol_WindowBg] = ImColor(9, 9, 9, 255);
 
-	Color[ImGuiCol_FrameBg] = ImColor(11, 11, 11, 255);
-	Color[ImGuiCol_FrameBgActive] = ImColor(18, 17, 17, 255);
-	Color[ImGuiCol_FrameBgHovered] = ImColor(18, 17, 17, 255);
+	Color[ImGuiCol_FrameBg] = ImColor(21, 21, 21, 255);
+	Color[ImGuiCol_FrameBgActive] = ImColor(17, 17, 17, 255);
+	Color[ImGuiCol_FrameBgHovered] = ImColor(25, 25, 25, 255);
 
 	Color[ImGuiCol_Button] = ImColor(14, 14, 14, 255);
 	Color[ImGuiCol_ButtonActive] = ImColor(17, 17, 17, 255);
@@ -50,6 +51,8 @@ char input_username[50] = "Nertigel";
 char input_password[50] = "1234";
 char input_redeem_key[50] = "";
 bool showRedeemWindow = false;
+bool checkbox_test = false;
+std::string showProductWindow = "";
 
 ImFont* font_gram_ttf;
 ImFont* font_gram2_ttf;
@@ -135,11 +138,6 @@ std::vector<Product> products = {
     //{"LLa test", "Unknown", "N/A"} // supplied by network.h
 };
 
-struct ChangeLog {
-    std::string type;
-    std::string description;
-    std::string date;
-};
 std::vector<ChangeLog> latest_changes = {
     {xorstr_("Loader update"), xorstr_("Added authentication system"), xorstr_("09/03/2025")}
 };
@@ -225,19 +223,19 @@ void user_interface::render_ui() {
                     {
                         authToken = network::get_auth_token(username, password);
                         if (!authToken.empty()) {
+                            notifications.push_back({ xorstr_("Login successful, fetching products"), 3.0f });
+                            
                             products = network::fetch_products(authToken);
-
-                            notifications.push_back({ xorstr_("Login Successful!"), 3.0f });
                             user_interface::selected_tab = 2;
                         }
                         else
                         {
-                            notifications.push_back({ xorstr_("Invalid Credentials!"), 3.0f });
+                            notifications.push_back({ xorstr_("Invalid credentials"), 3.0f });
                         }
                     }
                     else
                     {
-                        notifications.push_back({ xorstr_("Please enter both fields!"), 3.0f });
+                        notifications.push_back({ xorstr_("Please enter both fields"), 3.0f });
                     }
                 }
 
@@ -273,7 +271,7 @@ void user_interface::render_ui() {
                 DrawCenteredText(xorstr_("Enter a key to redeem:"));
 
                 ImGui::SetCursorPosX(20);
-                ImGui::InputTextNew("##RenderKey", input_redeem_key, sizeof(input_redeem_key), ImVec2(170, 25));
+                ImGui::InputTextNew(xorstr_("##iredeemkey"), input_redeem_key, sizeof(input_redeem_key), ImVec2(170, 25));
 
                 ImGui::PopFont();
                 ImGui::PopStyleColor();
@@ -286,7 +284,9 @@ void user_interface::render_ui() {
                     if (response == xorstr_("Key claimed successfully!")) {
                         products = network::fetch_products(authToken);
                     }
-                    notifications.push_back({ response, 3.0f });
+
+                    if (response != "")
+                        notifications.push_back({ response, 3.0f });
 
                     showRedeemWindow = false;
                 }
@@ -320,6 +320,7 @@ void user_interface::render_ui() {
                 if (ImGui::ButtonNew(ICON_FA_BARS, ImVec2(30, 30), user_interface::selected_sub_tab == 1))
                 {
                     user_interface::selected_sub_tab = 1;
+                    showProductWindow = "";
                     showRedeemWindow = false;
                 }
 
@@ -373,8 +374,8 @@ void user_interface::render_ui() {
 
                     ImGui::SetCursorPos(ImVec2(80, 75));
 
-                    for (const auto& product : products) {
-                        ImVec2 childSize = ImVec2(490, 80);
+                    if (showProductWindow != "") {
+                        ImVec2 childSize = ImVec2(490, 300);
                         ImVec2 cursor = ImGui::GetCursorScreenPos();
                         ImVec2 boxMin = cursor;
                         ImVec2 boxMax = ImVec2(cursor.x + childSize.x, cursor.y + childSize.y);
@@ -390,41 +391,17 @@ void user_interface::render_ui() {
                         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
                         ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(0, 0, 0, 0));
 
-                        ImGui::BeginChild(product.name.c_str(), childSize, false, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground);
+                        ImGui::BeginChild(xorstr_("spf_child"), childSize, false, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground);
                         {
                             ImGui::PushFont(font_gram3_ttf);
                             ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 255, 255, 255));
 
                             ImGui::SetCursorPos(ImVec2(10, 10));
-                            ImGui::Text(xorstr_("%s"), product.name.c_str());
+                            ImGui::Text(xorstr_("%s"), showProductWindow);
+
                             ImGui::SetCursorPos(ImVec2(10, 30));
-                            if (product.status == xorstr_("Undetected") || product.status == xorstr_("Online")) {
-                                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(50, 255, 50, 255));
-                            }
-                            else if (product.status == xorstr_("Detected") || product.status == xorstr_("Offline")) {
-                                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
-                            }
-                            else if (product.status == xorstr_("Testing")) {
-                                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 69, 0, 255));
-                            }
-                            else {
-                                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(169, 169, 169, 255));
-                            }
-                            ImGui::Text(xorstr_("%s"), product.status.c_str());
-                            ImGui::PopStyleColor();
-                            ImGui::SetCursorPos(ImVec2(10, 50));
-                            ImGui::Text(xorstr_("Expiration date: %s"), product.expiry.c_str());
+                            ImGui::Checkbox(xorstr_("test"), &checkbox_test);
                             ImGui::PopFont();
-
-                            ImGui::SetCursorPos(ImVec2(430, 45));
-                            if (ImGui::Button((xorstr_("Load##") + product.name).c_str(), ImVec2(50, 25))) {
-                                if (product.status == xorstr_("Undetected") || product.status == xorstr_("Online")) {
-
-                                }
-                                else {
-                                    notifications.push_back({ (xorstr_("Software is ") + product.status).c_str(), 3.0f });
-                                }
-                            }
                             ImGui::PopStyleColor();
                         }
                         ImGui::EndChild();
@@ -433,6 +410,69 @@ void user_interface::render_ui() {
                         ImGui::PopStyleVar();
 
                         ImGui::SetCursorScreenPos(ImVec2(cursor.x, cursor.y + childSize.y + 10)); // Adjust for next element
+                    }
+                    else {
+                        for (const auto& product : products) {
+                            ImVec2 childSize = ImVec2(490, 80);
+                            ImVec2 cursor = ImGui::GetCursorScreenPos();
+                            ImVec2 boxMin = cursor;
+                            ImVec2 boxMax = ImVec2(cursor.x + childSize.x, cursor.y + childSize.y);
+
+                            ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+                            // Background Layers (Matching the previous design)
+                            drawList->AddRectFilled(boxMin, boxMax, IM_COL32(11, 11, 11, 255), 3.0f);  // Dark background
+                            //drawList->AddRectFilled(boxMin, boxMax, IM_COL32(77, 77, 77, 120), 3.0f);  // Slight overlay
+                            drawList->AddRect(boxMin, boxMax, IM_COL32(255, 255, 255, 30), 3.0f);      // Soft outline
+
+                            ImGui::SetCursorScreenPos(cursor);
+                            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
+                            ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(0, 0, 0, 0));
+
+                            ImGui::BeginChild(product.name.c_str(), childSize, false, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground);
+                            {
+                                ImGui::PushFont(font_gram3_ttf);
+                                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 255, 255, 255));
+
+                                ImGui::SetCursorPos(ImVec2(10, 10));
+                                ImGui::Text(xorstr_("%s"), product.name.c_str());
+                                ImGui::SetCursorPos(ImVec2(10, 30));
+                                if (product.status == xorstr_("Undetected") || product.status == xorstr_("Online")) {
+                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(50, 255, 50, 255));
+                                }
+                                else if (product.status == xorstr_("Detected") || product.status == xorstr_("Offline")) {
+                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
+                                }
+                                else if (product.status == xorstr_("Testing")) {
+                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 69, 0, 255));
+                                }
+                                else {
+                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(169, 169, 169, 255));
+                                }
+                                ImGui::Text(xorstr_("%s"), product.status.c_str());
+                                ImGui::PopStyleColor();
+                                ImGui::SetCursorPos(ImVec2(10, 50));
+                                ImGui::Text(xorstr_("Expiration date: %s"), product.expiry.c_str());
+                                ImGui::PopFont();
+
+                                ImGui::SetCursorPos(ImVec2(430, 45));
+                                if (ImGui::Button((xorstr_("Load##") + product.name).c_str(), ImVec2(50, 25))) {
+                                    if (product.status == xorstr_("Undetected") || product.status == xorstr_("Online")) {
+                                        showProductWindow = product.name.c_str();
+                                    }
+                                    else {
+                                        notifications.push_back({ (xorstr_("Software is ") + product.status).c_str(), 3.0f });
+                                    }
+                                }
+                                ImGui::PopStyleColor();
+                            }
+                            ImGui::EndChild();
+
+                            ImGui::PopStyleColor();
+                            ImGui::PopStyleVar();
+
+                            ImGui::SetCursorScreenPos(ImVec2(cursor.x, cursor.y + childSize.y + 10)); // Adjust for next element
+                        }
                     }
                     break;
                 case 2:
@@ -475,8 +515,9 @@ void user_interface::render_ui() {
                             ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 200));
 
                             ImGui::SetCursorPos(ImVec2(10, 10));
-                            ImVec2 textSize = ImGui::CalcTextSize(changelog.type.c_str());
-                            ImGui::Text(changelog.type.c_str());
+                            std::string changelog_type = changelog.type;
+                            ImVec2 textSize = ImGui::CalcTextSize(changelog_type.c_str());
+                            ImGui::Text(xorstr_("%s"), changelog_type.c_str());
 
                             ImGui::SetCursorPos(ImVec2((ImGui::GetCursorPosX() + textSize.x + 15), 10));
 

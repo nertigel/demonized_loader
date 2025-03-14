@@ -7,8 +7,20 @@
 #include "xorstr.h"
 #include "dataset.h"
 
+std::string loader_version = xorstr_("d1.0.2");
+
 int APIENTRY WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
+    //up-to-date version check
+    std::string utd_version = network::get_app_version();
+    if (utd_version != loader_version) {
+        MessageBoxA(nullptr,
+            xorstr_("This version is outdated. Please update to the latest version."),
+            loader_version.c_str(),
+            MB_ICONERROR | MB_OK);
+        return 0;
+    }
+
     WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandleA(0), 0,0,0, 0, (L"explorer"), 0 };
     RegisterClassEx(&wc);
     Window = CreateWindow(wc.lpszClassName, xorstr_(L"Internet Explorer"), WS_POPUP, 0, 0, 5, 5, 0, 0, wc.hInstance, 0);

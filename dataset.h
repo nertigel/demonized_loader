@@ -6,3 +6,9 @@ struct Product {
     std::string status;
     std::string expiry;
 };
+
+struct ChangeLog {
+    std::string type;
+    std::string description;
+    std::string date;
+};

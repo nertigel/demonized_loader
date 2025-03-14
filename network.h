@@ -9,6 +9,7 @@
 
 namespace network
 {
+	std::string get_app_version();
 	//std::string http_get_headers(const std::string& url, const std::string& authToken);
 	std::string get_auth_token(const std::string& username, const std::string& password);
 	std::vector<Product> fetch_products(const std::string& authToken);

@@ -1,7 +1,7 @@
 import sqlite3
 from flask import Flask, request, jsonify
 from flask_jwt_extended import (
-    JWTManager, create_access_token, create_refresh_token, 
+    JWTManager, create_access_token, 
     jwt_required, get_jwt_identity
 )
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -12,21 +12,41 @@ app = Flask(__name__)
 # Secret key for signing JWTs (rotate this regularly for added security)
 app.config["JWT_SECRET_KEY"] = "super_secret_key"  # Change this in production!
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=5)  # 5-min session
-app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(hours=2)  # Refresh token expiry
 
 jwt = JWTManager(app)
 
 # SQLite Database setup
 DATABASE = 'demonized.db'
+VERSION = "d1.0.2"
+
+def check_useragent(ua):
+    if (ua == "dmnzd_frontend/1.0"):
+        return True
+
+    return False
 
 def init_db():
     with sqlite3.connect(DATABASE) as conn:
         cursor = conn.cursor()
         cursor.execute("""
+            CREATE TABLE IF NOT EXISTS logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uid INTEGER NOT NULL,
+                event_type TEXT NOT NULL,
+                event_details TEXT,
+                ip_address TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (uid) REFERENCES users(uid) ON DELETE CASCADE
+            );
+        """)
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 uid INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT NOT NULL UNIQUE,
-                password TEXT NOT NULL
+                password TEXT NOT NULL,
+                email TEXT UNIQUE,
+                banned BOOLEAN DEFAULT FALSE,
+                ban_reason TEXT
             );
         """)
         cursor.execute("""
@@ -59,7 +79,7 @@ def init_db():
 
 init_db()
 
-
+print(generate_password_hash("1234"))
 #@app.route("/register", methods=["POST"])
 #def register():
 #    data = request.json
@@ -84,6 +104,9 @@ init_db()
 
 @app.route("/login", methods=["POST"])
 def login():
+    if not (check_useragent(request.headers.get('User-Agent'))):
+        return jsonify({"msg": "nigga what"}), 404
+
     data = request.json
     username = data.get("username").lower()
     password = data.get("password")
@@ -93,24 +116,38 @@ def login():
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
         user = cursor.fetchone()
+        if not user:
+            return jsonify({"msg": "Invalid credentials"}), 401
 
-        if user and check_password_hash(user[2], password):  # user[2] is the hashed password
+        if user[4] == True: # Check if user is banned
+            return jsonify({"msg": f"Sadly you can not use the software due to an active ban.\nBan reason - {user[5]}"}), 201
+            
+        if check_password_hash(user[2], password):  # user[2] is the hashed password
             access_token = create_access_token(identity=user[0])  # user[0] is uid
-            refresh_token = create_refresh_token(identity=user[0])
-            return jsonify(access_token=access_token, refresh_token=refresh_token)
+            return jsonify(access_token=access_token)
     
     return jsonify({"msg": "Invalid credentials"}), 401
 
-@app.route("/refresh", methods=["POST"])
-@jwt_required(refresh=True)
-def refresh():
-    identity = get_jwt_identity()
-    new_access_token = create_access_token(identity=identity)
-    return jsonify(access_token=new_access_token)
+@app.route("/get_version", methods=["GET"])
+def get_version():
+    if not (check_useragent(request.headers.get('User-Agent'))):
+        return jsonify({"msg": "nigga what"}), 404
+
+    return jsonify({"version": VERSION}), 200
+
+#@app.route("/refresh", methods=["POST"])
+#@jwt_required(refresh=True)
+#def refresh():
+#    identity = get_jwt_identity()
+#    new_access_token = create_access_token(identity=identity)
+#    return jsonify(access_token=new_access_token)
 
 @app.route("/products", methods=["GET"])
 @jwt_required()
 def products():
+    if not (check_useragent(request.headers.get('User-Agent'))):
+        return jsonify({"msg": "nigga what"}), 404
+        
     user = get_jwt_identity()
 
     with sqlite3.connect(DATABASE) as conn:
@@ -144,6 +181,9 @@ def products():
 @app.route("/claim_key", methods=["POST"])
 @jwt_required()
 def claim_key():
+    if not (check_useragent(request.headers.get('User-Agent'))):
+        return jsonify({"msg": "nigga what"}), 404
+        
     user = get_jwt_identity()
 
     data = request.json
@@ -191,6 +231,9 @@ def claim_key():
 @app.route("/user_data", methods=["GET"])
 @jwt_required()
 def user_data():
+    if not (check_useragent(request.headers.get('User-Agent'))):
+        return jsonify({"msg": "nigga what"}), 404
+        
     user = get_jwt_identity()
 
     # Fetch user data

@@ -46,6 +46,9 @@
     <ClCompile Include="user_interface.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="spoofer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imconfig.h">
@@ -87,5 +90,6 @@
     <ClInclude Include="dataset.h" />
     <ClInclude Include="user_interface.h" />
     <ClInclude Include="loader.h" />
+    <ClInclude Include="spoofer.h" />
   </ItemGroup>
 </Project>

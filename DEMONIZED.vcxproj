@@ -138,7 +138,8 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(SolutionDir)/imgui</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <Optimization>MinSpace</Optimization>
+      <Optimization>Full</Optimization>
+      <DebugInformationFormat>None</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -160,6 +161,7 @@
     <ClCompile Include="imgui\imgui_widgets.cpp" />
     <ClCompile Include="loader.cpp" />
     <ClCompile Include="network.cpp" />
+    <ClCompile Include="spoofer.cpp" />
     <ClCompile Include="user_interface.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -178,6 +180,7 @@
     <ClInclude Include="loader.h" />
     <ClInclude Include="network.h" />
     <ClInclude Include="nlohmann\json.hpp" />
+    <ClInclude Include="spoofer.h" />
     <ClInclude Include="user_interface.h" />
     <ClInclude Include="xorstr.h" />
   </ItemGroup>
